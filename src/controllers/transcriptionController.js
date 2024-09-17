@@ -1,16 +1,13 @@
 const Transcription = require('../models/Transcription');
 const { admin } = require('../config/firebase');
 const ffmpeg = require('fluent-ffmpeg');
-const { Configuration, OpenAIApi } = require('openai');
+require('dotenv').config();
+const { OpenAI } = require('openai');
 const fs = require('fs');
 const path = require('path');
 const { Op } = require('sequelize');
 
-// Configuração da OpenAI API
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY, // Substitua pela sua chave de API
-});
-const openai = new OpenAIApi(configuration);
+const openai = new OpenAI();
 
 class TranscriptionController {
   static async createTranscription(req, res) {
@@ -30,7 +27,7 @@ class TranscriptionController {
       },
     });
 
-    const DAILY_LIMIT = 2; // Limite diário de 2 transcrições
+    const DAILY_LIMIT = 6; // Limite diário de 2 transcrições
 
     if (count >= DAILY_LIMIT) {
       // Deletar o arquivo enviado
@@ -98,8 +95,10 @@ class TranscriptionController {
   }
 
   static async transcribeWithOpenAI(filePath) {
-    const audioFile = fs.createReadStream(filePath);
-    const response = await openai.createTranscription(audioFile, 'whisper-1');
+    const response = await openai.audio.transcriptions.create({
+      file: fs.createReadStream(filePath),
+      model: "whisper-1",
+    });
     return response.data.text;
   }
 

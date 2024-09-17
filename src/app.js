@@ -34,7 +34,7 @@ app.use(router);
 sequelize.sync()
   .then(() => {
     console.log('Banco de dados sincronizado');
-    const PORT = 8080;
+    const PORT = 8081;
     app.listen(PORT, () => {
       console.log(`Servidor rodando na porta ${PORT}`);
     });
