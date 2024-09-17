@@ -2,6 +2,9 @@
 const express = require('express');
 const router = express.Router();
 
+const TranscriptionController = require('../controllers/transcriptionController');
+const upload = require('../config/multer');
+
 const firebaseAuthController = require('../controllers/firebase-auth-controller');
 const verifyToken = require('../middleware/verifyToken');
 
@@ -19,5 +22,10 @@ router.get('/api/user', verifyToken, (req, res) => {
 router.get('/api/protected', verifyToken, (req, res) => {
   res.status(200).json({ message: 'Acesso concedido à rota protegida', user: req.user });
 });
+
+// Rotas para transcrição
+router.post('/api/transcriptions', verifyToken, upload.single('file'), TranscriptionController.createTranscription);
+router.get('/api/transcriptions', verifyToken, TranscriptionController.getTranscriptions);
+router.get('/api/transcriptions/:id/download', verifyToken, TranscriptionController.downloadTranscription);
 
 module.exports = router;
