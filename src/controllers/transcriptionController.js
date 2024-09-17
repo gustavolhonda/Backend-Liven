@@ -27,7 +27,7 @@ class TranscriptionController {
       },
     });
 
-    const DAILY_LIMIT = 6; // Limite diário de 2 transcrições
+    const DAILY_LIMIT = 10; // Limite diário de 2 transcrições
 
     if (count >= DAILY_LIMIT) {
       // Deletar o arquivo enviado
@@ -65,6 +65,7 @@ class TranscriptionController {
 
       // Atualizar registro no banco de dados
       transcription.status = 'completed';
+      console.log('Texto da transcrição:', transcriptionText);
       transcription.transcriptionText = transcriptionText;
       await transcription.save();
 
@@ -98,8 +99,10 @@ class TranscriptionController {
     const response = await openai.audio.transcriptions.create({
       file: fs.createReadStream(filePath),
       model: "whisper-1",
+      response_format: "text",
     });
-    return response.data.text;
+    console.log('Resposta da OpenAI:', response);
+    return response;
   }
 
   static async getTranscriptions(req, res) {
