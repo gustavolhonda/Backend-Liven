@@ -23,7 +23,7 @@ router.get('/api/protected', verifyToken, (req, res) => {
   res.status(200).json({ message: 'Acesso concedido à rota protegida', user: req.user });
 });
 
-// Rotas para transcrição
+// Rotas para transcrição que também são protegidas
 router.post('/api/transcriptions', verifyToken, upload.single('file'), TranscriptionController.createTranscription);
 router.get('/api/transcriptions', verifyToken, TranscriptionController.getTranscriptions);
 router.get('/api/transcriptions/:id/download', verifyToken, TranscriptionController.downloadTranscription);
