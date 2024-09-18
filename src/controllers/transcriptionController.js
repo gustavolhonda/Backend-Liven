@@ -65,7 +65,6 @@ class TranscriptionController {
 
       // Atualizar registro no banco de dados
       transcription.status = 'completed';
-      console.log('Texto da transcrição:', transcriptionText);
       transcription.transcriptionText = transcriptionText;
       await transcription.save();
 
@@ -101,7 +100,6 @@ class TranscriptionController {
       model: "whisper-1",
       response_format: "text",
     });
-    console.log('Resposta da OpenAI:', response);
     return response;
   }
 
