@@ -10,14 +10,18 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-  storage,
-  limits: { fileSize: 25 * 1024 * 1024 }, // Limite de 25MB
+  storage: storage,
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB
+  },
   /*fileFilter: (req, file, cb) => {
-    // Filtra o tipo de arquivo (ex: MP4)
-    if (file.mimetype === 'video/mp4') {
-      cb(null, true);
+    const filetypes = /mp3|mp4|wav|m4a/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
     } else {
-      cb(new Error('Apenas arquivos MP4 são permitidos'));
+      cb(new Error('Tipo de arquivo inválido. Apenas MP3, MP4, WAV e M4A são permitidos.'));
     }
   },*/
 });

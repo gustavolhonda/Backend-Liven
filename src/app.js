@@ -16,7 +16,9 @@ app.use(cors({
     credentials: true,
   }));
 
-app.use(express.json())
+
+app.use(express.json({ limit: '100mb' })); // Aumenta o limite para JSON
+app.use(express.urlencoded({ extended: true, limit: '100mb' })); // Aumenta o limite para URL-encoded
 app.use(cookieParser())
 
 app.get('/', (req, res) => {

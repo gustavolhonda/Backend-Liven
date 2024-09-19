@@ -32,7 +32,7 @@ class TranscriptionController {
     });
 
     // Define o limite diário de transcrições (3 neste caso)
-    const DAILY_LIMIT = 5; 
+    const DAILY_LIMIT = 10; 
 
     // Se o usuário ultrapassou o limite, exclui o arquivo e retorna um erro 429
     if (count >= DAILY_LIMIT) {
@@ -64,8 +64,38 @@ class TranscriptionController {
   // Método que faz o processamento da transcrição (conversão para MP3 e chamada à API da OpenAI)
   static async processTranscription(transcription, filePath) {
     try {
-      // Envia para OpenAI
-      const transcriptionText = await TranscriptionController.transcribeWithOpenAI(filePath);
+
+      let mp3Path = filePath;
+
+      // Verifica o tipo do arquivo e converte para MP3 se necessário
+      if (path.extname(filePath).toLowerCase() === '.mp4') {
+        mp3Path = `${filePath}.mp3`;
+        await TranscriptionController.convertToMp3(filePath, mp3Path);
+        console.log(`Arquivo convertido para MP3: ${mp3Path}`);
+      }
+
+      // Verifica o tamanho do arquivo
+      const stats = fs.statSync(mp3Path);
+      const fileSizeInMB = stats.size / (1024 * 1024);
+
+      let transcriptionText = '';
+
+      if (fileSizeInMB > 25) {
+        // Divide o arquivo em segmentos de 10 minutos (600 segundos)
+        console.log('Dividindo arquivo em segmentos menores...');
+        const segments = await TranscriptionController.splitAudio(mp3Path, 600); // 600 segundos = 10 minutos
+
+        for (const segment of segments) {
+          console.log(`Transcrevendo segmento: ${segment}`);
+          const segmentTranscription = await TranscriptionController.transcribeWithOpenAI(segment);
+          transcriptionText += segmentTranscription + ' ';
+          // Remove o segmento após transcrição
+          fs.unlinkSync(segment);
+        }
+      } else {
+        // Transcreve o arquivo diretamente
+        transcriptionText = await TranscriptionController.transcribeWithOpenAI(mp3Path);
+      }
 
       // Atualiza o status da transcrição no banco de dados como "concluído" e salva o texto transcrito
       transcription.status = 'completed';
@@ -74,7 +104,12 @@ class TranscriptionController {
 
       // Remove os arquivos temporários (o original e o MP3)
       fs.unlinkSync(filePath);
-      //fs.unlinkSync(mp3Path);
+      if (filePath !== mp3Path) {
+        fs.unlinkSync(mp3Path);
+      }
+
+      console.log('Transcrição concluída e salva no banco de dados.');
+
     } catch (error) {
       // Em caso de erro, registra a falha e atualiza o status da transcrição para "falha"
       console.error('Erro ao processar transcrição:', error);
@@ -102,15 +137,22 @@ class TranscriptionController {
 
   // Método para chamar a API da OpenAI para transcrever o arquivo de áudio
   static async transcribeWithOpenAI(filePath) {
-    // Faz a requisição para a API da OpenAI, passando o arquivo MP3 e o modelo de transcrição
-    const response = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(filePath), // Envia o arquivo como um stream
-      model: "whisper-1", // Usa o modelo de transcrição "whisper-1"
-      response_format: "text", // Formato de resposta será texto
-    });
-    return response; // Retorna a resposta da API
-  }
+    try {
+      // Faz a requisição para a API da OpenAI, passando o arquivo MP3 e o modelo de transcrição
+      const response = await openai.audio.transcriptions.create({
+        file: fs.createReadStream(filePath), // Envia o arquivo como um stream
+        model: "whisper-1", // Usa o modelo de transcrição "whisper-1"
+        response_format: "text", // Formato de resposta será texto
+      });
 
+      console.log(`Transcrição concluída para o arquivo: ${filePath}`);
+      return response; // Retorna a resposta da API
+    } catch (error) {
+      console.error(`Erro na transcrição com OpenAI para o arquivo ${filePath}:`, error);
+      throw error;
+    }
+  }
+ 
   // Método para obter todas as transcrições de um usuário
   static async getTranscriptions(req, res) {
     const userId = req.user.uid; // Obtém o ID do usuário a partir do token de autenticação
@@ -160,6 +202,58 @@ class TranscriptionController {
       res.status(500).json({ error: 'Erro ao baixar transcrição' });
     }
   }
+
+  /**
+   * Divide o arquivo de áudio em segmentos de 10 minutos.
+   * @param {string} inputPath - Caminho do arquivo de entrada.
+   * @param {number} segmentDuration - Duração de cada segmento em segundos.
+   * @returns {Promise<string[]>} - Array com os caminhos dos segmentos criados.
+   */
+  static splitAudio(inputPath, segmentDuration = 600) { // 600 segundos = 10 minutos
+    return new Promise((resolve, reject) => {
+      // Primeiro, obtém a duração total do áudio
+      ffmpeg.ffprobe(inputPath, (err, metadata) => {
+        if (err) {
+          return reject(err);
+        }
+
+        const duration = metadata.format.duration;
+        const numberOfSegments = Math.ceil(duration / segmentDuration);
+        const segmentPaths = [];
+
+        const splitPromises = [];
+
+        for (let i = 0; i < numberOfSegments; i++) {
+          const startTime = i * segmentDuration;
+          const outputPath = `${path.parse(inputPath).name}_part${i + 1}.mp3`;
+          segmentPaths.push(outputPath);
+
+          splitPromises.push(new Promise((res, rej) => {
+            ffmpeg(inputPath)
+              .setStartTime(startTime)
+              .setDuration(segmentDuration)
+              .output(outputPath)
+              .on('end', () => {
+                console.log(`Segmento ${i + 1} criado: ${outputPath}`);
+                res();
+              })
+              .on('error', (error) => {
+                console.error(`Erro ao criar segmento ${i + 1}:`, error);
+                rej(error);
+              })
+              .run();
+          }));
+        }
+
+        // Executa todas as promessas de divisão
+        Promise.all(splitPromises)
+          .then(() => resolve(segmentPaths))
+          .catch((error) => reject(error));
+      });
+    });
+  }
+
+
 }
 
 // Exporta a classe TranscriptionController para ser usada em outros lugares da aplicação
