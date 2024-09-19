@@ -32,7 +32,7 @@ class TranscriptionController {
     });
 
     // Define o limite diário de transcrições (3 neste caso)
-    const DAILY_LIMIT = 3; 
+    const DAILY_LIMIT = 5; 
 
     // Se o usuário ultrapassou o limite, exclui o arquivo e retorna um erro 429
     if (count >= DAILY_LIMIT) {
@@ -64,14 +64,8 @@ class TranscriptionController {
   // Método que faz o processamento da transcrição (conversão para MP3 e chamada à API da OpenAI)
   static async processTranscription(transcription, filePath) {
     try {
-      // Define o caminho de saída para o arquivo MP3
-      const mp3Path = `${filePath}.mp3`;
-
-      // Converte para MP3
-      await TranscriptionController.convertToMp3(filePath, mp3Path);
-
       // Envia para OpenAI
-      const transcriptionText = await TranscriptionController.transcribeWithOpenAI(mp3Path);
+      const transcriptionText = await TranscriptionController.transcribeWithOpenAI(filePath);
 
       // Atualiza o status da transcrição no banco de dados como "concluído" e salva o texto transcrito
       transcription.status = 'completed';
@@ -80,7 +74,7 @@ class TranscriptionController {
 
       // Remove os arquivos temporários (o original e o MP3)
       fs.unlinkSync(filePath);
-      fs.unlinkSync(mp3Path);
+      //fs.unlinkSync(mp3Path);
     } catch (error) {
       // Em caso de erro, registra a falha e atualiza o status da transcrição para "falha"
       console.error('Erro ao processar transcrição:', error);
