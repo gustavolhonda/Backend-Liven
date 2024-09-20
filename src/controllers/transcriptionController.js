@@ -31,8 +31,8 @@ class TranscriptionController {
       },
     });
 
-    // Define o limite diário de transcrições (3 neste caso)
-    const DAILY_LIMIT = 10; 
+    // Define o limite diário de transcrições (5 neste caso)
+    const DAILY_LIMIT = 5; 
 
     // Se o usuário ultrapassou o limite, exclui o arquivo e retorna um erro 429
     if (count >= DAILY_LIMIT) {
@@ -48,6 +48,7 @@ class TranscriptionController {
         userId, // ID do usuário autenticado
         originalFileName: file.filename, // Nome original do arquivo
       });
+      
 
       // Iniciar processamento assíncrono
       TranscriptionController.processTranscription(transcription, file.path);
@@ -71,7 +72,6 @@ class TranscriptionController {
       if (path.extname(filePath).toLowerCase() === '.mp4') {
         mp3Path = `${filePath}.mp3`;
         await TranscriptionController.convertToMp3(filePath, mp3Path);
-        console.log(`Arquivo convertido para MP3: ${mp3Path}`);
       }
 
       // Verifica o tamanho do arquivo
@@ -81,9 +81,9 @@ class TranscriptionController {
       let transcriptionText = '';
 
       if (fileSizeInMB > 25) {
-        // Divide o arquivo em segmentos de 10 minutos (600 segundos)
+        // Divide o arquivo em segmentos de 15 minutos (900 segundos)
         console.log('Dividindo arquivo em segmentos menores...');
-        const segments = await TranscriptionController.splitAudio(mp3Path, 600); // 600 segundos = 10 minutos
+        const segments = await TranscriptionController.splitAudio(mp3Path, 900); // 900 segundos = 15 minutos
 
         for (const segment of segments) {
           console.log(`Transcrevendo segmento: ${segment}`);
@@ -203,13 +203,13 @@ class TranscriptionController {
     }
   }
 
-  /**
-   * Divide o arquivo de áudio em segmentos de 10 minutos.
-   * @param {string} inputPath - Caminho do arquivo de entrada.
-   * @param {number} segmentDuration - Duração de cada segmento em segundos.
-   * @returns {Promise<string[]>} - Array com os caminhos dos segmentos criados.
-   */
-  static splitAudio(inputPath, segmentDuration = 600) { // 600 segundos = 10 minutos
+  /*
+   Divide o arquivo de áudio em segmentos de 10 minutos.
+    @param {string} inputPath - Caminho do arquivo de entrada.
+    @param {number} segmentDuration - Duração de cada segmento em segundos.
+    @returns {Promise<string[]>} - Array com os caminhos dos segmentos criados.
+  */
+  static splitAudio(inputPath, segmentDuration = 900) { // 900 segundos = 15 minutos
     return new Promise((resolve, reject) => {
       // Primeiro, obtém a duração total do áudio
       ffmpeg.ffprobe(inputPath, (err, metadata) => {

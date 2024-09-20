@@ -23,15 +23,15 @@ class FirebaseAuthController {
       .then((userCredential) => {
         sendEmailVerification(auth.currentUser)
           .then(() => {
-            res.status(201).json({ message: "Verification email sent! User created successfully!" });
+            res.status(201).json({ message: "Email de verificação enviado! Usuário criado com sucesso." });
           })
           .catch((error) => {
             console.error(error);
-            res.status(500).json({ error: "Error sending email verification" });
+            res.status(500).json({ error: "Erro ao enviar o email de verificação" });
           });
       })
       .catch((error) => {
-        const errorMessage = error.message || "An error occurred while registering user";
+        const errorMessage = error.message || "Um erro ocorreu ao criar o usuário";
         res.status(500).json({ error: errorMessage });
       });
   }
@@ -67,8 +67,8 @@ loginUser(req, res) {
 
       let errorMessage = "Erro ao fazer login";
 
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        errorMessage = "Usuário ou senha não cadastrados";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMessage = "Usuário ou senha incorretos";
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = "Muitas tentativas de login. Por favor, tente novamente mais tarde.";
       } else {
