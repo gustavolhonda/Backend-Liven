@@ -25,8 +25,8 @@ O **Sistema de Transcrição de Áudio - Backend** é uma aplicação desenvolvi
 - **Dotenv** (para variáveis de ambiente)
 
 ## 📄 Documentação da API
-Endpoints Disponíveis
-POST /api/transcriptions
+- Endpoints Disponíveis
+- POST /api/transcriptions
 
 Descrição: Cria uma nova transcrição.
 Headers: Authorization: Bearer <token>
@@ -35,14 +35,17 @@ Resposta:
 200 OK com transcriptionId.
 429 Too Many Requests se o limite diário for atingido.
 500 Internal Server Error em caso de erro no servidor.
-GET /api/transcriptions
+
+
+- GET /api/transcriptions
 
 Descrição: Obtém todas as transcrições do usuário autenticado.
 Headers: Authorization: Bearer <token>
 Resposta:
 200 OK com a lista de transcrições.
 500 Internal Server Error em caso de erro no servidor.
-GET /api/transcriptions/:id/download
+
+- GET /api/transcriptions/:id/download
 
 Descrição: Baixa uma transcrição específica.
 Headers: Authorization: Bearer <token>
