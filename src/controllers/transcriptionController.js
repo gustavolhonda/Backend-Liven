@@ -211,44 +211,46 @@ class TranscriptionController {
   */
   static splitAudio(inputPath, segmentDuration = 900) { // 900 segundos = 15 minutos
     return new Promise((resolve, reject) => {
-      // Primeiro, obtém a duração total do áudio
+      // Usa ffprobe para obter metadados do arquivo, incluindo a duração total do áudio
       ffmpeg.ffprobe(inputPath, (err, metadata) => {
         if (err) {
           return reject(err);
         }
 
-        const duration = metadata.format.duration;
-        const numberOfSegments = Math.ceil(duration / segmentDuration);
-        const segmentPaths = [];
+        const duration = metadata.format.duration; // Obtém a duração total do áudio
+        const numberOfSegments = Math.ceil(duration / segmentDuration); // Calcula o número total de segmentos
+        const segmentPaths = []; // Array para armazenar os caminhos dos segmentos gerados
 
-        const splitPromises = [];
+        const splitPromises = []; // Array para armazenar as promessas de divisão de cada segmento
 
+        // Loop para gerar cada segmento
         for (let i = 0; i < numberOfSegments; i++) {
-          const startTime = i * segmentDuration;
-          const outputPath = `${path.parse(inputPath).name}_part${i + 1}.mp3`;
-          segmentPaths.push(outputPath);
+          const startTime = i * segmentDuration; // Define o tempo de início para o segmento atual
+          const outputPath = `${path.parse(inputPath).name}_part${i + 1}.mp3`; // Caminho do arquivo de saída para o segmento
+          segmentPaths.push(outputPath); // Armazena o caminho do segmento no array
 
+          // Cria uma nova promessa para dividir o segmento
           splitPromises.push(new Promise((res, rej) => {
             ffmpeg(inputPath)
-              .setStartTime(startTime)
-              .setDuration(segmentDuration)
-              .output(outputPath)
-              .on('end', () => {
+              .setStartTime(startTime) // Define o tempo de início do segmento
+              .setDuration(segmentDuration)  // Define a duração do segmento
+              .output(outputPath) // Define o caminho do arquivo de saída
+              .on('end', () => { // Quando a divisão do segmento terminar
                 console.log(`Segmento ${i + 1} criado: ${outputPath}`);
-                res();
+                res(); // Resolve a promessa para o segmento
               })
               .on('error', (error) => {
                 console.error(`Erro ao criar segmento ${i + 1}:`, error);
-                rej(error);
+                rej(error); // Rejeita a promessa com o erro
               })
-              .run();
+              .run(); // Inicia o processo de divisão usando ffmpeg
           }));
         }
 
-        // Executa todas as promessas de divisão
+        // Executa todas as promessas de divisão ao mesmo tempo e resolve a promessa principal com os caminhos dos segmentos
         Promise.all(splitPromises)
-          .then(() => resolve(segmentPaths))
-          .catch((error) => reject(error));
+          .then(() => resolve(segmentPaths)) // Resolve a promessa com os caminhos dos arquivos segmentados
+          .catch((error) => reject(error)); // Em caso de erro, rejeita a promessa principal
       });
     });
   }
