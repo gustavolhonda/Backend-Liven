@@ -253,6 +253,36 @@ class TranscriptionController {
     });
   }
 
+  // Método para obter o limite diário restante do usuário
+  static async getDailyLimit(req, res) {
+    const userId = req.user.uid; // Obtém o ID do usuário a partir do token de autenticação
+
+    // Define o limite diário
+    const DAILY_LIMIT = 5;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    try {
+      // Conta quantas transcrições o usuário já criou hoje
+      const count = await Transcription.count({
+        where: {
+          userId,
+          createdAt: {
+            [Op.gte]: today,
+          },
+        },
+      });
+
+      const remaining = DAILY_LIMIT - count;
+
+      res.status(200).json({ remainingTranscriptions: remaining >= 0 ? remaining : 0 });
+    } catch (error) {
+      console.error('Erro ao obter limite diário:', error);
+      res.status(500).json({ error: 'Erro ao obter limite diário' });
+    }
+  }
+
 
 }
 

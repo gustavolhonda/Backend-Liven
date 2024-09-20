@@ -27,5 +27,6 @@ router.get('/api/protected', verifyToken, (req, res) => {
 router.post('/api/transcriptions', verifyToken, upload.single('file'), TranscriptionController.createTranscription);
 router.get('/api/transcriptions', verifyToken, TranscriptionController.getTranscriptions);
 router.get('/api/transcriptions/:id/download', verifyToken, TranscriptionController.downloadTranscription);
+router.get('/transcriptions/daily-limit', verifyToken, TranscriptionController.getDailyLimit);
 
 module.exports = router;
